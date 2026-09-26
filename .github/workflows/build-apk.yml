@@ -7,6 +7,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # GitHub'ın dosyayı ana sayfaya yükleyebilmesi için şart
     steps:
       - uses: actions/checkout@v4
 
@@ -26,18 +28,14 @@ jobs:
           if [ ! -f package.json ]; then
             echo '{"name": "html-game", "version": "1.0.0"}' > package.json
           fi
-          
           mkdir -p www
-          
           if [ -f index.html ]; then
             cp index.html www/
           else
             echo '<!DOCTYPE html><html><head><title>Game</title></head><body><h1 style="text-align:center; margin-top:20%;">Oyun Yukleniyor...</h1></body></html>' > www/index.html
           fi
-          
           shopt -s extglob
           cp -r !(www|.git|.github|node_modules|package.json|package-lock.json) www/ 2>/dev/null || true
-
           echo '{"appId": "com.oyun.app", "appName": "MobilOyun", "webDir": "www"}' > capacitor.config.json
 
       - name: Install Capacitor CLI & Android Packages
@@ -52,7 +50,6 @@ jobs:
         run: |
           npx --yes cap sync android
 
-      # KOTLIN ÇAKIŞMASINI ÇÖZEN ADIM: Eski sürümleri engelleyip tek bir güncel stdlib sürümünü zorunlu kılıyoruz.
       - name: Fix Kotlin Duplicate Classes
         run: |
           echo "configurations.all { resolutionStrategy.eachDependency { DependencyResolveDetails details -> if (details.requested.group == 'org.jetbrains.kotlin') { details.useVersion '1.8.22' } } }" >> android/app/build.gradle
@@ -63,8 +60,12 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
+      # YENİ ADIM: APK'yı zip yapmadan doğrudan ana sayfaya (Releases) fırlatır
+      - name: Release APK to Main Page
+        uses: softprops/action-gh-release@v2
         with:
-          name: html-game-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          tag_name: v1.0.${{ github.run_number }}
+          name: Mobil Oyun v1.0.${{ github.run_number }}
+          draft: false
+          prerelease: false
+          files: android/app/build/outputs/apk/debug/app-debug.apk
