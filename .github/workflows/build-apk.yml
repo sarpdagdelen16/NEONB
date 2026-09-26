@@ -21,29 +21,33 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Initialize Project & Fix Index Missing
+      - name: Initialize Project Files
         run: |
-          # Eğer package.json yoksa oluştur
+          # Eğer package.json yoksa hata vermemesi için oluştur
           if [ ! -f package.json ]; then
             echo '{"name": "html-game", "version": "1.0.0"}' > package.json
           fi
           
-          # EĞER ANA DİZİNDE INDEX.HTML YOKSA GEÇİCİ BİR TANE OLUŞTURUYORUZ (ÇARPIYI ENGELLEMEK İÇİN)
+          # Eğer index.html yoksa zorunlu bir tane oluştur
           if [ ! -f index.html ]; then
-            echo '<!DOCTYPE html><html><head><title>Game</title></head><body><script>window.location.href="index.html";</script></body></html>' > index.html
+            echo '<!DOCTYPE html><html><head><title>Game</title></head><body></body></html>' > index.html
           fi
 
+          # Manuel olarak konfigürasyon dosyasını oluşturup hata payını sıfırlıyoruz
+          echo '{"appId": "com.oyun.app", "appName": "MobilOyun", "webDir": ".", "bundledWebRuntime": false}' > capacitor.config.json
+
+      - name: Install Capacitor CLI & Android Packages
+        run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android
 
-      - name: Initialize Capacitor Config
+      - name: Add Android Platform (Non-Interactive)
         run: |
-          rm -f capacitor.config.json
-          npx cap init MobilOyun com.oyun.app --web-dir .
+          # --no-interactive takısı ile onay beklemeleri tamamen bypass edilir
+          npx cap add android --no-interactive
 
-      - name: Add Android Platform
+      - name: Sync Capacitor
         run: |
-          npx cap add android
-          npx cap sync android
+          npx cap sync android --no-interactive
 
       - name: Build APK with Gradle
         run: |
