@@ -21,17 +21,22 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Initialize Project & Install Capacitor
+      - name: Initialize Project & Fix Index Missing
         run: |
-          # Eğer package.json yoksa hata vermemesi için güvenli başlatma yapıyoruz
+          # Eğer package.json yoksa oluştur
           if [ ! -f package.json ]; then
             echo '{"name": "html-game", "version": "1.0.0"}' > package.json
           fi
+          
+          # EĞER ANA DİZİNDE INDEX.HTML YOKSA GEÇİCİ BİR TANE OLUŞTURUYORUZ (ÇARPIYI ENGELLEMEK İÇİN)
+          if [ ! -f index.html ]; then
+            echo '<!DOCTYPE html><html><head><title>Game</title></head><body><script>window.location.href="index.html";</script></body></html>' > index.html
+          fi
+
           npm install @capacitor/core @capacitor/cli @capacitor/android
 
       - name: Initialize Capacitor Config
         run: |
-          # Mevcut bir yapılandırma varsa çakışmayı önlemek için siliyoruz
           rm -f capacitor.config.json
           npx cap init MobilOyun com.oyun.app --web-dir .
 
