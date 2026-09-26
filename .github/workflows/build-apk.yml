@@ -21,17 +21,31 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Initialize Project Files
+      - name: Prepare Web Directory (www)
         run: |
+          # Güvenli bir package.json oluştur
           if [ ! -f package.json ]; then
             echo '{"name": "html-game", "version": "1.0.0"}' > package.json
           fi
           
-          if [ ! -f index.html ]; then
-            echo '<!DOCTYPE html><html><head><title>Game</title></head><body></body></html>' > index.html
+          # www adında temiz bir web klasörü oluştur
+          mkdir -p www
+          
+          # Eğer ana dizinde bir index.html varsa onu www içine kopyala
+          if [ -f index.html ]; then
+            cp index.html www/
+          else
+            # Eğer index.html yoksa (farklı bir html varsa veya klasör içindeyse)
+            # Sürecin çökmemesi için www içine geçici bir index.html oluşturuyoruz
+            echo '<!DOCTYPE html><html><head><title>Game</title></head><body><h1 style="text-align:center; margin-top:20%;">Oyun Yukleniyor...</h1></body></html>' > www/index.html
           fi
+          
+          # Projedeki diğer tüm dosyaları (resim, css, js vb.) www klasörüne kopyala (www'nin kendisi hariç)
+          shopt -s extglob
+          cp -r !(www|.git|.github|node_modules|package.json|package-lock.json) www/ 2>/dev/null || true
 
-          echo '{"appId": "com.oyun.app", "appName": "MobilOyun", "webDir": "."}' > capacitor.config.json
+          # Konfigürasyonu www klasörünü görecek şekilde ayarla
+          echo '{"appId": "com.oyun.app", "appName": "MobilOyun", "webDir": "www"}' > capacitor.config.json
 
       - name: Install Capacitor CLI & Android Packages
         run: |
@@ -39,7 +53,6 @@ jobs:
 
       - name: Add Android Platform
         run: |
-          # npx --yes parametresi sistemin takılmadan ilerlemesini sağlar
           npx --yes cap add android
 
       - name: Sync Capacitor
