@@ -1,0 +1,46 @@
+name: HTML to APK Build
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Install Tools & Build Android
+        run: |
+          npm init -y
+          # Capacitor araçlarını yükle
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          
+          # Proje ayarlarını yap (Uygulama adı: MobilOyun, Paket: com.oyun.app)
+          npx cap init MobilOyun com.oyun.app --web-dir .
+          
+          # Android platformunu ekle ve senkronize et
+          npx cap add android
+          npx cap sync android
+          
+          # Android klasörüne git ve APK'yı derle
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: html-game-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
