@@ -21,20 +21,27 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Install Tools & Build Android
+      - name: Initialize Project & Install Capacitor
         run: |
-          npm init -y
-          # Capacitor araçlarını yükle
+          # Eğer package.json yoksa hata vermemesi için güvenli başlatma yapıyoruz
+          if [ ! -f package.json ]; then
+            echo '{"name": "html-game", "version": "1.0.0"}' > package.json
+          fi
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          
-          # Proje ayarlarını yap (Uygulama adı: MobilOyun, Paket: com.oyun.app)
+
+      - name: Initialize Capacitor Config
+        run: |
+          # Mevcut bir yapılandırma varsa çakışmayı önlemek için siliyoruz
+          rm -f capacitor.config.json
           npx cap init MobilOyun com.oyun.app --web-dir .
-          
-          # Android platformunu ekle ve senkronize et
+
+      - name: Add Android Platform
+        run: |
           npx cap add android
           npx cap sync android
-          
-          # Android klasörüne git ve APK'yı derle
+
+      - name: Build APK with Gradle
+        run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
